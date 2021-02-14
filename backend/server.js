@@ -1,19 +1,36 @@
 const express = require("express");
-const products = require("./data/products");
+const mongoose = require("mongoose");
+const dotenv = require("dotenv");
+const productRouter = require("./routes/productRoute");
+const notFoundError = require("./middleware/errorsMiddleware").notFoundError;
+const serverError = require("./middleware/errorsMiddleware").serverError;
+
+dotenv.config();
 
 const app = express();
+
+// connect DB
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useUnifiedTopology: true,
+    useNewUrlParser: true,
+    useCreateIndex: true,
+  })
+  .then((res) => console.log("db connected"))
+  .catch((e) => console.log(`error-> ${e}`));
 
 app.get("/", (req, res) => {
   res.send("hellooo");
 });
 
-app.get("/api/products", (req, res) => {
-  res.json(products);
-});
+app.use("/api/products", productRouter);
 
-app.get("/api/product/:id", (req, res) => {
-  const product = products.find((p) => p._id === req.params.id);
-  res.json(product);
-});
+// 404 error
+app.use(notFoundError);
 
-app.listen(5000, console.log("app is running"));
+// error code handling
+app.use(serverError);
+
+const PORT = process.env.PORT || 5000;
+
+app.listen(PORT, console.log("app is running"));
